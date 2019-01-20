@@ -1,30 +1,33 @@
 import db from '../db/db';
+import models from '../server/models';
 
 class TodosController {
   getAllTodos(req, res) {
-    return res.status(200).send({
+    models.Todo.findAll()
+    .then(todos => res.status(200).send({
       success: 'true',
       message: 'todos retrieved successfully',
-      todos: db,
-    });
+      todos,
+    }));
   }
 
   getTodo(req, res) {
-    const id = parseInt(req.params.id, 10);
-    db.map((todo) => {
-      if (todo.id === id) {
-        return res.status(200).send({
-          success: 'true',
-          message: 'todo retrieved successfully',
-          todo,
-        });
-      }
-    });
+  const id = parseInt(req.params.id, 10);
+  models.Todo.findById(id)
+  .then((todo) => {
+    if (todo) {
+      return res.status(200).send({
+        success: 'true',
+        message: 'todo retrieved successfully',
+        todo,
+      });
+    }
     return res.status(404).send({
       success: 'false',
       message: 'todo does not exist',
     });
-  }
+  });
+}
 
   createTodo(req, res) {
     if (!req.body.title) {
@@ -32,24 +35,31 @@ class TodosController {
         success: 'false',
         message: 'title is required',
       });
-    } else if (!req.body.description) {
-      return res.status(400).send({
-        success: 'false',
-        message: 'description is required',
+  }
+
+  models.Todo.findOne({
+    where: { title: req.body.title }
+  })
+  .then((todoFound) => {
+    if (todoFound) {
+      return res.status(403).send({
+       success: 'true',
+        message: 'A todo with that title exist already',
       });
     }
-    const todo = {
-      id: db.length + 1,
-      title: req.body.title,
-      description: req.body.description,
-    };
-    db.push(todo);
+
+  const todo = {
+    title: req.body.title,
+  };
+  models.Todo.create(todo).then((todo) => {
     return res.status(201).send({
-      success: 'true',
-      message: 'todo added successfully',
-      todo,
-    });
-  }
+       success: 'true',
+       message: 'todo added successfully',
+       todo,
+     });
+  });
+})
+}
 
   updateTodo(req, res) {
     const id = parseInt(req.params.id, 10);
